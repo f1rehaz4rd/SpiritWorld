@@ -1,0 +1,67 @@
+https://mholt.github.io/json-to-go/
+
+// Action JSON
+{
+    "action_type": "ACTION_TYPE",
+    "action_output": "ACTION_OUTPUT"
+}
+
+// Agent -> Server JSON
+{
+    "agent_name": "AGENT_NAME",
+    "agent_version": "AGENT_VERSION",
+    "UUID": "AGENT_UUID",
+    "primary_ip": "PRIMARY_INTERFACE_IP",
+    "hostname": "AGENT_HOSTNAME",
+    "MAC": "AGENT_MAC_ADDRESS",
+    "agent_os": "AGENT_OS",
+    "other_ips": ["ALL_AGENTS_IPS"],
+    "API_KEY": "SERVER_API_KEY"
+}
+
+// Server Registry Agent -> Database JSON
+{
+    "time": "CURRENT_TIME",
+    "public_ip": "PUBLIC_IP",
+    "agent": {
+        "agent_name": "AGENT_NAME",
+        "agent_version": "AGENT_VERSION",
+        "UUID": "AGENT_UUID",
+        "primary_ip": "PRIMARY_INTERFACE_IP",
+        "hostname": "AGENT_HOSTNAME",
+        "MAC": "AGENT_MAC_ADDRESS",
+        "agent_os": "AGENT_OS",
+        "other_ips": ["ALL_AGENTS_IPS"],
+        "API_KEY": "SERVER_API_KEY"
+    }
+}
+
+// Server Register Response -> Agent
+{
+    "RESPONSE": "SERVER_RESPONSE"
+}
+
+// Agent Beacon -> Server
+{
+    "agent": {
+        "agent_name": "AGENT_NAME",
+        "agent_version": "AGENT_VERSION",
+        "UUID": "AGENT_UUID",
+        "primary_ip": "PRIMARY_INTERFACE_IP",
+        "hostname": "AGENT_HOSTNAME",
+        "MAC": "AGENT_MAC_ADDRESS",
+        "agent_os": "AGENT_OS",
+        "other_ips": ["ALL_AGENTS_IPS"],
+        "API_KEY": "SERVER_API_KEY"
+    },
+    "action": {
+        "action_type": "ACTION_TYPE",
+        "action_output": "ACTION_OUTPUT"
+    }
+}
+
+// Server Beacon Response -> Agent 
+{
+    "action_type": "ACTION_TYPE",
+    "action_command": "ACTION"
+}
