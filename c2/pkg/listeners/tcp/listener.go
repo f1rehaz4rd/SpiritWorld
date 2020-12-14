@@ -14,14 +14,15 @@ const SERVADDR = "0.0.0.0:4321"
 // handleConnection from the TCP listener
 //
 func handleConnection(conn net.Conn) {
+	defer conn.Close()
+
 	msg := make([]byte, 4096)
 	n, _ := conn.Read(msg)
 
-	if api.HandleMessage(msg[:n], conn.RemoteAddr().String()) {
+	if api.HandleMessage(msg[:n], conn) {
 		fmt.Println("Connection Valid")
 	}
 
-	conn.Close()
 }
 
 //

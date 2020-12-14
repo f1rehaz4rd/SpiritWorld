@@ -6,6 +6,7 @@ import (
 	"net"
 	"os"
 	"runtime"
+	"time"
 
 	"github.com/f1rehaz4rd/SpiritWorld/agent/pkg/agents"
 	"github.com/google/uuid"
@@ -20,7 +21,7 @@ const AGENTAPIKEY = "ASDFASDFASDFASDF"
 
 var agent agents.Agent
 
-func registerAgent() {
+func registerAgent() bool {
 
 	buildAgent()
 
@@ -35,13 +36,28 @@ func registerAgent() {
 	conn, err := net.Dial("tcp", servAddr)
 	if err != nil {
 		fmt.Println(err)
-		return
+		return false
 	}
+
+	defer conn.Close()
 
 	msg, _ := json.Marshal(register)
 	conn.Write(msg)
 
-	conn.Close()
+	n, _ := conn.Read(msg)
+
+	var action agents.Action
+	if err := json.Unmarshal(msg[:n], &action); err != nil {
+		fmt.Println("failed register")
+		return false
+	}
+
+	if action.ActionType == "register" &&
+		action.ActionOutput == "success" {
+		return true
+	}
+
+	return false
 }
 
 func getIPs() []string {
@@ -132,8 +148,56 @@ func buildAgent() {
 
 }
 
+func beacon() bool {
+	beaconObj := agents.AgentBeacon{
+		Agent: &agent,
+		Action: &agents.Action{
+			ActionType:   "beacon",
+			ActionOutput: "",
+		},
+	}
+
+	conn, err := net.Dial("tcp", servAddr)
+	if err != nil {
+		fmt.Println(err)
+		return false
+	}
+
+	defer conn.Close()
+
+	msg, _ := json.Marshal(beaconObj)
+	conn.Write(msg)
+
+	n, _ := conn.Read(msg)
+
+	var action agents.Action
+	if err := json.Unmarshal(msg[:n], &action); err != nil {
+		fmt.Println("failed to beacon")
+		return false
+	}
+
+	switch action.ActionType {
+	case "beacon":
+		return action.ActionOutput == "success"
+	default:
+		break
+	}
+
+	return false
+}
+
 func main() {
 
-	registerAgent()
+	if registerAgent() {
+		fmt.Println("Sucessfully registered")
+		for {
+			if beacon() {
+				fmt.Println("successful heartbeat")
+			} else {
+				fmt.Println("problem beaconing")
+			}
+			time.Sleep(3 * time.Second)
+		}
+	}
 
 }
