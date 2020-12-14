@@ -17,7 +17,7 @@ const initString = "REGISTER"
 
 const AGENTNAME = "Spirit Test"
 const AGENTVERSION = "v 0.1"
-const AGENTAPIKEY = "ASDFASDFASDFASDF"
+const AGENTAPIKEY = "bc43b40c-3e5f-11eb-b378-0242ac130002"
 
 var agent agents.Agent
 

@@ -15,6 +15,7 @@ type Agent struct {
 type Action struct {
 	ActionType   string `json:"action_type"`
 	ActionOutput string `json:"action_output"`
+	UUID         string `json:"UUID"`
 }
 
 type AgentBeacon struct {

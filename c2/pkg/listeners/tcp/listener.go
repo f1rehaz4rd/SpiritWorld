@@ -19,8 +19,9 @@ func handleConnection(conn net.Conn) {
 	msg := make([]byte, 4096)
 	n, _ := conn.Read(msg)
 
-	if api.HandleMessage(msg[:n], conn) {
-		fmt.Println("Connection Valid")
+	if !api.HandleMessage(msg[:n], conn) {
+		fmt.Println("Error with connection: " 
+			+ conn.RemoteAddr().String())
 	}
 
 }
