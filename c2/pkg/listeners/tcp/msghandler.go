@@ -45,11 +45,8 @@ func agentRegister(agent *agents.Agent, conn net.Conn) bool {
 	defer db.Close()
 
 	if !db.InsertAgent(register) {
-		fmt.Println("Failed to register: " + conn.RemoteAddr().String())
 		return false
 	}
-
-	fmt.Println("Registering: " + conn.RemoteAddr().String())
 
 	resp := &agents.Action{
 		ActionType:   "register",
@@ -78,11 +75,8 @@ func agentBeaconing(agent *agents.Agent, conn net.Conn) bool {
 	defer db.Close()
 
 	if !db.UpdateAgent(beacon) {
-		fmt.Println("Failed to update: " + conn.RemoteAddr().String())
 		return false
 	}
-
-	fmt.Println("Updating: " + conn.RemoteAddr().String())
 
 	resp := &agents.Action{
 		ActionType:   "beacon",

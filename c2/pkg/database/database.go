@@ -3,6 +3,7 @@ package database
 import (
 	"database/sql"
 	"fmt"
+	"sync"
 
 	"github.com/f1rehaz4rd/SpiritWorld/c2/pkg/agents"
 	"github.com/f1rehaz4rd/SpiritWorld/c2/pkg/api"
@@ -19,19 +20,20 @@ const (
 )
 
 type DatabaseModel struct {
-	db *sql.DB
+	db    *sql.DB
+	mutex *sync.Mutex
 }
 
 type AgentBeaconModel struct {
-	registerTime   string
-	lastBeaconTime string
-	actionqueue    string
+	RegisterTime   string
+	LastBeaconTime string
+	Actionqueue    string
 }
 
 type AgentModel struct {
-	agentObj *agents.Agent
-	publicip string
-	beacon   *AgentBeaconModel
+	AgentObj *agents.Agent
+	Publicip string
+	Beacon   *AgentBeaconModel
 }
 
 func (model *DatabaseModel) Open() {
@@ -50,6 +52,7 @@ func (model *DatabaseModel) Open() {
 		panic(err)
 	}
 
+	model.mutex = &sync.Mutex{}
 }
 
 func (model *DatabaseModel) Close() {
@@ -73,6 +76,7 @@ func (model *DatabaseModel) InsertAgent(register api.RegisterAgent) bool {
 	`
 
 	agent := register.Agent
+	model.mutex.Lock()
 	_, err := model.db.Exec(sqlStatment,
 		agent.UUID,
 		agent.AgentName,
@@ -86,6 +90,7 @@ func (model *DatabaseModel) InsertAgent(register api.RegisterAgent) bool {
 	if err != nil {
 		return false
 	}
+	model.mutex.Unlock()
 
 	sqlStatment = `
 	INSERT INTO agentbeacon (
@@ -114,9 +119,13 @@ func (model *DatabaseModel) UpdateAgent(beacon api.BeaconAgent) bool {
 	SET lastbeacon = $2
 	WHERE uuid = $1;
 	`
+
+	model.mutex.Lock()
 	_, err := model.db.Exec(sqlStatment,
 		beacon.Agent.UUID,
 		beacon.BeaconTime)
+	model.mutex.Unlock()
+
 	if err != nil {
 		return false
 	}
@@ -129,7 +138,9 @@ func (model *DatabaseModel) AllAgents() ([]AgentModel, error) {
 
 	sqlStatement := `SELECT * FROM agent;`
 
+	model.mutex.Lock()
 	rows, err := model.db.Query(sqlStatement)
+	model.mutex.Unlock()
 	if err != nil {
 		return nil, err
 	}
@@ -174,8 +185,8 @@ func (model *DatabaseModel) AllAgents() ([]AgentModel, error) {
 		}
 
 		tmp := AgentModel{
-			agentObj: tmpAgent,
-			publicip: publicip,
+			AgentObj: tmpAgent,
+			Publicip: publicip,
 		}
 
 		allAgents = append(allAgents, tmp)
@@ -185,19 +196,19 @@ func (model *DatabaseModel) AllAgents() ([]AgentModel, error) {
 	for i := 0; i < len(allAgents); i++ {
 		sqlStatement = `SELECT registertime, lastbeacon, actionqueue FROM agentbeacon WHERE uuid=$1;`
 
-		row := model.db.QueryRow(sqlStatement, allAgents[i].agentObj.UUID)
+		row := model.db.QueryRow(sqlStatement, allAgents[i].AgentObj.UUID)
 
 		var registertime, lastbeacon, actionqueue string
 		switch err := row.Scan(&registertime, &lastbeacon, &actionqueue); err {
 		case sql.ErrNoRows:
-			return nil, err
+			break
 		case nil:
 			tmp := &AgentBeaconModel{
-				registerTime:   registertime,
-				lastBeaconTime: lastbeacon,
-				actionqueue:    actionqueue,
+				RegisterTime:   registertime,
+				LastBeaconTime: lastbeacon,
+				Actionqueue:    actionqueue,
 			}
-			allAgents[i].beacon = tmp
+			allAgents[i].Beacon = tmp
 			break
 		default:
 			return nil, err
