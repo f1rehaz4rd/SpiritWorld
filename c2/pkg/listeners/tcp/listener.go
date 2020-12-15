@@ -20,8 +20,7 @@ func handleConnection(conn net.Conn) {
 	n, _ := conn.Read(msg)
 
 	if !api.HandleMessage(msg[:n], conn) {
-		fmt.Println("Error with connection: " 
-			+ conn.RemoteAddr().String())
+		fmt.Println("Error with connection: " + conn.RemoteAddr().String())
 	}
 
 }
