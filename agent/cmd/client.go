@@ -107,6 +107,18 @@ func getPrimaryIP(ips []string) string {
 	return primaryIP
 }
 
+func ipsToString(ips []string) string {
+	var ipString string
+
+	for i := 0; i < len(ips); i++ {
+		ipString = ipString + ips[i] + ","
+	}
+
+	ipString = ipString[:len(ipString)-1]
+
+	return ipString
+}
+
 func getMacAddr() ([]string, error) {
 	ifas, err := net.Interfaces()
 	if err != nil {
@@ -142,7 +154,7 @@ func buildAgent() {
 		Hostname:     hostname,
 		MAC:          macAddr[0],
 		AgentOS:      runtime.GOOS,
-		OtherIPs:     ips,
+		OtherIPs:     ipsToString(ips),
 		APIKEY:       AGENTAPIKEY,
 	}
 

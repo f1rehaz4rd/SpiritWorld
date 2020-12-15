@@ -46,7 +46,8 @@ CREATE TABLE public.agent (
     hostname text NOT NULL,
     mac text NOT NULL,
     agentos text NOT NULL,
-    otherips text NOT NULL
+    otherips text NOT NULL,
+    publicip text NOT NULL
 );
 
 

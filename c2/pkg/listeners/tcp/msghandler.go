@@ -1,11 +1,14 @@
-package api
+package tcp
 
 import (
 	"encoding/json"
 	"fmt"
 	"net"
+	"time"
 
 	"github.com/f1rehaz4rd/SpiritWorld/c2/pkg/agents"
+	"github.com/f1rehaz4rd/SpiritWorld/c2/pkg/api"
+	"github.com/f1rehaz4rd/SpiritWorld/c2/pkg/database"
 )
 
 func HandleMessage(msg []byte, conn net.Conn) bool {
@@ -31,11 +34,20 @@ func HandleMessage(msg []byte, conn net.Conn) bool {
 
 func agentRegister(agent *agents.Agent, conn net.Conn) bool {
 
-	// register := &RegisterAgent{
-	// 	RegisterTime: time.Now(),
-	// 	PublicIP:     conn.RemoteAddr().String(),
-	// 	Agent:        agent,
-	// }
+	register := api.RegisterAgent{
+		RegisterTime: time.Now(),
+		PublicIP:     conn.RemoteAddr().String(),
+		Agent:        agent,
+	}
+
+	var db database.DatabaseModel
+	db.Open()
+	defer db.Close()
+
+	if !db.InsertAgent(register) {
+		fmt.Println("Failed to register: " + conn.RemoteAddr().String())
+		return false
+	}
 
 	fmt.Println("Registering: " + conn.RemoteAddr().String())
 
@@ -55,11 +67,20 @@ func agentRegister(agent *agents.Agent, conn net.Conn) bool {
 
 func agentBeaconing(agent *agents.Agent, conn net.Conn) bool {
 
-	// beacon := &BeaconAgent{
-	// 	BeaconTime: time.Now(),
-	// 	PublicIP:   conn.RemoteAddr().String(),
-	// 	Agent:      agent,
-	// }
+	beacon := api.BeaconAgent{
+		BeaconTime: time.Now(),
+		PublicIP:   conn.RemoteAddr().String(),
+		Agent:      agent,
+	}
+
+	var db database.DatabaseModel
+	db.Open()
+	defer db.Close()
+
+	if !db.UpdateAgent(beacon) {
+		fmt.Println("Failed to update: " + conn.RemoteAddr().String())
+		return false
+	}
 
 	fmt.Println("Updating: " + conn.RemoteAddr().String())
 
