@@ -14,6 +14,7 @@ type Agent struct {
 
 type Action struct {
 	ActionType   string `json:"action_type"`
+	ActionCmd    string `json:"action_cmd"`
 	ActionOutput string `json:"action_output"`
 	UUID         string `json:"UUID"`
 }
