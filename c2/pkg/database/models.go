@@ -35,6 +35,11 @@ type AgentModel struct {
 	Beacon   *AgentBeaconModel
 }
 
+//
+//
+// DELETE THIS!!!!!!!!!!!!!!!!!!
+//
+//
 type ActionModel struct {
 }
 
