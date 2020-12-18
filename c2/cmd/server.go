@@ -9,4 +9,3 @@ func main() {
 	go tcp.StartListener()
 	RestAPI.Start()
 }
-

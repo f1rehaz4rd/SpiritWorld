@@ -26,6 +26,7 @@ SET default_table_access_method = heap;
 
 CREATE TABLE public.actions (
     uuid text NOT NULL,
+    agentuuid text NOT NULL,
     actiontype text NOT NULL,
     actioncmd text NOT NULL,
     actionresponse text
@@ -46,7 +47,7 @@ CREATE TABLE public.agent (
     hostname text NOT NULL,
     mac text NOT NULL,
     agentos text NOT NULL,
-    otherips text NOT NULL,
+    otherips text[] NOT NULL,
     publicip text NOT NULL
 );
 
@@ -61,7 +62,21 @@ CREATE TABLE public.agentbeacon (
     uuid text NOT NULL,
     registertime text NOT NULL,
     lastbeacon text NOT NULL,
-    actionqueue text NOT NULL
+    actionqueue text[] NOT NULL,
+    actions text[] NOT NULL
+);
+
+
+ALTER TABLE public.agentbeacon OWNER TO redteam;
+
+
+---
+--- Name: 
+---
+
+CREATE TABLE public.groups (
+    groupname text NOT NULL,
+    actions text[] NOT NULL
 );
 
 
@@ -114,6 +129,10 @@ ALTER TABLE ONLY public.agent
 ALTER TABLE ONLY public.agentbeacon
     ADD CONSTRAINT agentbeacon_pkey PRIMARY KEY (uuid);
 
+
+
+ALTER TABLE ONLY public.groups
+    ADD CONSTRAINT groups_pkey PRIMARY KEY (groupname);
 
 --
 -- PostgreSQL database dump complete

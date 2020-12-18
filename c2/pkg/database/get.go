@@ -5,6 +5,7 @@ import (
 
 	"github.com/f1rehaz4rd/SpiritWorld/c2/pkg/agents"
 
+	"github.com/lib/pq"
 	_ "github.com/lib/pq"
 )
 
@@ -23,69 +24,47 @@ func (model *DatabaseModel) AllAgents() ([]AgentModel, error) {
 	defer rows.Close()
 
 	for rows.Next() {
-		var uuid,
-			agentname,
-			agentversion,
-			primaryip,
-			hostname,
-			mac,
-			agentos,
-			otherips,
-			publicip string
 
+		var agentModel AgentModel
+		var tmpAgent agents.Agent
 		err = rows.Scan(
-			&uuid,
-			&agentname,
-			&agentversion,
-			&primaryip,
-			&hostname,
-			&mac,
-			&agentos,
-			&otherips,
-			&publicip)
+			&tmpAgent.UUID,
+			&tmpAgent.AgentName,
+			&tmpAgent.AgentVersion,
+			&tmpAgent.PrimaryIP,
+			&tmpAgent.Hostname,
+			&tmpAgent.MAC,
+			&tmpAgent.AgentOS,
+			pq.Array(&tmpAgent.OtherIPs),
+			&agentModel.Publicip)
 
 		if err != nil {
 			return nil, err
 		}
 
-		tmpAgent := &agents.Agent{
-			AgentName:    agentname,
-			AgentVersion: agentversion,
-			UUID:         uuid,
-			PrimaryIP:    primaryip,
-			Hostname:     hostname,
-			MAC:          mac,
-			AgentOS:      agentos,
-			OtherIPs:     otherips,
-		}
+		agentModel.AgentObj = &tmpAgent
 
-		tmp := AgentModel{
-			AgentObj: tmpAgent,
-			Publicip: publicip,
-		}
-
-		allAgents = append(allAgents, tmp)
+		allAgents = append(allAgents, agentModel)
 
 	}
 
 	for i := 0; i < len(allAgents); i++ {
-		sqlStatement = `SELECT registertime, lastbeacon, actionqueue FROM agentbeacon WHERE uuid=$1;`
+		sqlStatement = `SELECT * WHERE uuid=$1;`
 
 		model.mutex.Lock()
 		row := model.db.QueryRow(sqlStatement, allAgents[i].AgentObj.UUID)
 		model.mutex.Unlock()
 
-		var registertime, lastbeacon, actionqueue string
-		switch err := row.Scan(&registertime, &lastbeacon, &actionqueue); err {
+		var beaconModel AgentBeaconModel
+		switch err := row.Scan(
+			&beaconModel.RegisterTime,
+			&beaconModel.LastBeaconTime,
+			pq.Array(&beaconModel.ActionQueue),
+			pq.Array(&beaconModel.Actions)); err {
 		case sql.ErrNoRows:
 			break
 		case nil:
-			tmp := &AgentBeaconModel{
-				RegisterTime:   registertime,
-				LastBeaconTime: lastbeacon,
-				Actionqueue:    actionqueue,
-			}
-			allAgents[i].Beacon = tmp
+			allAgents[i].Beacon = &beaconModel
 			break
 		default:
 			return nil, err
@@ -105,64 +84,43 @@ func (model *DatabaseModel) GetAgentByID(id string) (AgentModel, error) {
 	row := model.db.QueryRow(sqlStatement, id)
 	model.mutex.Unlock()
 
-	var uuid,
-		agentname,
-		agentversion,
-		primaryip,
-		hostname,
-		mac,
-		agentos,
-		otherips,
-		publicip string
+	var tmpAgent agents.Agent
 
 	switch err := row.Scan(
-		&uuid,
-		&agentname,
-		&agentversion,
-		&primaryip,
-		&hostname,
-		&mac,
-		&agentos,
-		&otherips,
-		&publicip); err {
+		&tmpAgent.UUID,
+		&tmpAgent.AgentName,
+		&tmpAgent.AgentVersion,
+		&tmpAgent.PrimaryIP,
+		&tmpAgent.Hostname,
+		&tmpAgent.MAC,
+		&tmpAgent.AgentOS,
+		pq.Array(&tmpAgent.OtherIPs),
+		&agent.Publicip); err {
 	case sql.ErrNoRows:
 		break
 	case nil:
-		tmpAgent := &agents.Agent{
-			AgentName:    agentname,
-			AgentVersion: agentversion,
-			UUID:         uuid,
-			PrimaryIP:    primaryip,
-			Hostname:     hostname,
-			MAC:          mac,
-			AgentOS:      agentos,
-			OtherIPs:     otherips,
-		}
-
-		agent = AgentModel{
-			AgentObj: tmpAgent,
-			Publicip: publicip,
-		}
-
+		agent.AgentObj = &tmpAgent
 	default:
 		return agent, err
 	}
 
-	sqlStatement = `SELECT registertime, lastbeacon, actionqueue FROM agentbeacon WHERE uuid=$1;`
+	sqlStatement = `SELECT registertime,
+		 lastbeacon,
+		 actionqueue,
+		 actions
+		 FROM agentbeacon WHERE uuid=$1;`
 
 	row = model.db.QueryRow(sqlStatement, id)
-
-	var registertime, lastbeacon, actionqueue string
-	switch err := row.Scan(&registertime, &lastbeacon, &actionqueue); err {
+	var beaconModel AgentBeaconModel
+	switch err := row.Scan(
+		&beaconModel.RegisterTime,
+		&beaconModel.LastBeaconTime,
+		pq.Array(&beaconModel.ActionQueue),
+		pq.Array(&beaconModel.Actions)); err {
 	case sql.ErrNoRows:
 		break
 	case nil:
-		tmp := &AgentBeaconModel{
-			RegisterTime:   registertime,
-			LastBeaconTime: lastbeacon,
-			Actionqueue:    actionqueue,
-		}
-		agent.Beacon = tmp
+		agent.Beacon = &beaconModel
 		break
 	default:
 		return agent, err
@@ -171,8 +129,8 @@ func (model *DatabaseModel) GetAgentByID(id string) (AgentModel, error) {
 	return agent, nil
 }
 
-func (model *DatabaseModel) AllActions() ([]agents.Action, error) {
-	var allActions []agents.Action
+func (model *DatabaseModel) AllActions() ([]ActionModel, error) {
+	var allActions []ActionModel
 
 	sqlStatement := `SELECT * FROM actions;`
 
@@ -185,38 +143,27 @@ func (model *DatabaseModel) AllActions() ([]agents.Action, error) {
 
 	defer rows.Close()
 
+	var actionModel ActionModel
 	for rows.Next() {
-		var uuid,
-			actiontype,
-			actioncmd,
-			actionresponse string
 
 		err = rows.Scan(
-			&uuid,
-			&actiontype,
-			&actioncmd,
-			&actionresponse)
+			&actionModel.UUID,
+			&actionModel.AgentUUID,
+			&actionModel.ActionCmd,
+			&actionModel.ActionOutput)
 
 		if err != nil {
 			return nil, err
 		}
 
-		tmpAction := agents.Action{
-			UUID:         uuid,
-			ActionType:   actiontype,
-			ActionCmd:    actioncmd,
-			ActionOutput: actionresponse,
-		}
-
-		allActions = append(allActions, tmpAction)
+		allActions = append(allActions, actionModel)
 
 	}
 
 	return allActions, nil
 }
 
-func (model *DatabaseModel) GetActionByID(id string) (agents.Action, error) {
-	var action agents.Action
+func (model *DatabaseModel) GetActionByID(id string) (ActionModel, error) {
 
 	sqlStatement := `SELECT * FROM actions WHERE uuid=$1;`
 
@@ -224,29 +171,19 @@ func (model *DatabaseModel) GetActionByID(id string) (agents.Action, error) {
 	row := model.db.QueryRow(sqlStatement, id)
 	model.mutex.Unlock()
 
-	var uuid,
-		actiontype,
-		actioncmd,
-		actionresponse string
-
+	var actionModel ActionModel
 	switch err := row.Scan(
-		&uuid,
-		&actiontype,
-		&actioncmd,
-		&actionresponse); err {
+		&actionModel.UUID,
+		&actionModel.AgentUUID,
+		&actionModel.ActionCmd,
+		&actionModel.ActionOutput); err {
 	case sql.ErrNoRows:
 		break
 	case nil:
-		action = agents.Action{
-			UUID:         uuid,
-			ActionType:   actiontype,
-			ActionCmd:    actioncmd,
-			ActionOutput: actionresponse,
-		}
 		break
 	default:
-		return action, err
+		return actionModel, err
 	}
 
-	return action, nil
+	return actionModel, nil
 }

