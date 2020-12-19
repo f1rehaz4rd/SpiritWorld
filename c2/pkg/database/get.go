@@ -49,7 +49,12 @@ func (model *DatabaseModel) AllAgents() ([]AgentModel, error) {
 	}
 
 	for i := 0; i < len(allAgents); i++ {
-		sqlStatement = `SELECT * WHERE uuid=$1;`
+		sqlStatement = `SELECT
+			registertime,
+			lastbeacon,
+			actionqueue,
+			actions 
+			FROM agentbeacon WHERE uuid=$1;`
 
 		model.mutex.Lock()
 		row := model.db.QueryRow(sqlStatement, allAgents[i].AgentObj.UUID)
@@ -149,6 +154,7 @@ func (model *DatabaseModel) AllActions() ([]ActionModel, error) {
 		err = rows.Scan(
 			&actionModel.UUID,
 			&actionModel.AgentUUID,
+			&actionModel.ActionType,
 			&actionModel.ActionCmd,
 			&actionModel.ActionOutput)
 
@@ -175,6 +181,7 @@ func (model *DatabaseModel) GetActionByID(id string) (ActionModel, error) {
 	switch err := row.Scan(
 		&actionModel.UUID,
 		&actionModel.AgentUUID,
+		&actionModel.ActionType,
 		&actionModel.ActionCmd,
 		&actionModel.ActionOutput); err {
 	case sql.ErrNoRows:
@@ -186,4 +193,54 @@ func (model *DatabaseModel) GetActionByID(id string) (ActionModel, error) {
 	}
 
 	return actionModel, nil
+}
+
+func (model *DatabaseModel) AllGroups() ([]GroupModel, error) {
+	var groups []GroupModel
+
+	sqlStatement := `SELECT * FROM groups`
+
+	model.mutex.Lock()
+	rows, err := model.db.Query(sqlStatement)
+	model.mutex.Unlock()
+	if err != nil {
+		return nil, err
+	}
+
+	defer rows.Close()
+
+	for rows.Next() {
+		var group GroupModel
+		err = rows.Scan(&group.GroupName, pq.Array(&group.AgentsUUIDs))
+
+		if err != nil {
+			return nil, err
+		}
+
+		groups = append(groups, group)
+	}
+
+	return groups, nil
+}
+
+func (model *DatabaseModel) GetGroupByID(name string) (GroupModel, error) {
+	sqlStatement := `SELECT * FROM groups WHERE groupname=$1`
+
+	model.mutex.Lock()
+	row := model.db.QueryRow(sqlStatement, name)
+	model.mutex.Unlock()
+
+	var group GroupModel
+	switch err := row.Scan(
+		&group.GroupName,
+		pq.Array(&group.AgentsUUIDs)); err {
+	case sql.ErrNoRows:
+		break
+	case nil:
+		break
+	default:
+		return group, err
+	}
+
+	return group, nil
 }

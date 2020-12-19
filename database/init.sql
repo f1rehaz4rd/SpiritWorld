@@ -76,7 +76,7 @@ ALTER TABLE public.agentbeacon OWNER TO redteam;
 
 CREATE TABLE public.groups (
     groupname text NOT NULL,
-    actions text[] NOT NULL
+    agentuuids text[] NOT NULL
 );
 
 

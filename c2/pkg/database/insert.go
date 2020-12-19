@@ -2,6 +2,7 @@ package database
 
 import (
 	"github.com/f1rehaz4rd/SpiritWorld/c2/pkg/api"
+	"github.com/google/uuid"
 
 	"github.com/lib/pq"
 	_ "github.com/lib/pq"
@@ -86,19 +87,21 @@ func (model *DatabaseModel) UpdateAgent(beacon api.BeaconAgent) bool {
 
 func (model *DatabaseModel) InsertAction(action ActionModel) bool {
 
-	sqlStatment := `
+	sqlStatement := `
 	INSERT INTO actions (
 		uuid,
-		agentuuid
+		agentuuid,
+		actiontype,
 		actioncmd,
-		actionoutput
-		) VALUES ($1, $2, $3, $4)
+		actionresponse
+	) VALUES ($1, $2, $3, $4, $5)
 	`
 
 	model.mutex.Lock()
-	_, err := model.db.Exec(sqlStatment,
+	_, err := model.db.Exec(sqlStatement,
 		action.UUID,
 		action.AgentUUID,
+		action.ActionType,
 		action.ActionCmd,
 		"")
 	model.mutex.Unlock()
@@ -111,14 +114,14 @@ func (model *DatabaseModel) InsertAction(action ActionModel) bool {
 	agent.Beacon.ActionQueue = append(agent.Beacon.ActionQueue, action.UUID)
 	agent.Beacon.Actions = append(agent.Beacon.Actions, action.UUID)
 
-	sqlStatment = `
+	sqlStatement = `
 	UPDATE agentbeacon
-	SET actionqueue = $2 AND actions = $3
+	SET actionqueue = $2, actions = $3
 	WHERE uuid = $1;
 	`
 
 	model.mutex.Lock()
-	_, err = model.db.Exec(sqlStatment,
+	_, err = model.db.Exec(sqlStatement,
 		action.AgentUUID,
 		pq.Array(agent.Beacon.ActionQueue),
 		pq.Array(agent.Beacon.Actions))
@@ -131,17 +134,158 @@ func (model *DatabaseModel) InsertAction(action ActionModel) bool {
 	return true
 }
 
-func (model *DatabaseModel) CreateGroup(name string) bool {
+func (model *DatabaseModel) InsertGroupAction(name, actionType, cmd string) bool {
+
+	group, err := model.GetGroupByID(name)
+	if err != nil {
+		return false
+	}
+
+	for i := 0; i < len(group.AgentsUUIDs); i++ {
+
+		action := ActionModel{
+			ActionType: actionType,
+			ActionCmd:  cmd,
+			UUID:       uuid.New().String(),
+			AgentUUID:  group.AgentsUUIDs[i],
+		}
+
+		sqlStatement := `
+		INSERT INTO actions (
+			uuid,
+			agentuuid,
+			actiontype,
+			actioncmd,
+			actionresponse
+		) VALUES ($1, $2, $3, $4, $5)
+		`
+
+		model.mutex.Lock()
+		_, err := model.db.Exec(sqlStatement,
+			action.UUID,
+			action.AgentUUID,
+			action.ActionType,
+			action.ActionCmd,
+			"")
+		model.mutex.Unlock()
+
+		if err != nil {
+			return false
+		}
+
+		agent, _ := model.GetAgentByID(action.AgentUUID)
+		agent.Beacon.ActionQueue = append(agent.Beacon.ActionQueue, action.UUID)
+		agent.Beacon.Actions = append(agent.Beacon.Actions, action.UUID)
+
+		sqlStatement = `
+		UPDATE agentbeacon
+		SET actionqueue = $2, actions = $3
+		WHERE uuid = $1;
+		`
+
+		model.mutex.Lock()
+		_, err = model.db.Exec(sqlStatement,
+			action.AgentUUID,
+			pq.Array(agent.Beacon.ActionQueue),
+			pq.Array(agent.Beacon.Actions))
+		model.mutex.Unlock()
+
+		if err != nil {
+			return false
+		}
+	}
+
+	return true
+}
+
+func (model *DatabaseModel) CreateGroup(group GroupModel) bool {
 	sqlStatment := `
 	INSERT INTO groups (
-		groupname
-		) VALUES ($1)
+		groupname,
+		agentuuids
+	) VALUES ($1, $2)
 	`
 
 	model.mutex.Lock()
 	_, err := model.db.Exec(sqlStatment,
-		name,
+		group.GroupName,
 		pq.Array([]string{}))
+	model.mutex.Unlock()
+
+	if err != nil {
+		return false
+	}
+
+	return true
+}
+
+func (model *DatabaseModel) InsertIntoGroup(name string, id string) bool {
+	group, err := model.GetGroupByID(name)
+	if err != nil {
+		return false
+	}
+
+	_, err = model.GetAgentByID(id)
+	if err != nil {
+		return false
+	}
+
+	group.AgentsUUIDs = append(group.AgentsUUIDs, id)
+
+	sqlStatement := `
+	UPDATE groups
+	SET agentuuids = $2
+	WHERE groupname = $1;
+	`
+
+	model.mutex.Lock()
+	_, err = model.db.Exec(sqlStatement,
+		name,
+		pq.Array(group.AgentsUUIDs))
+	model.mutex.Unlock()
+
+	if err != nil {
+		return false
+	}
+
+	return true
+}
+
+func (model *DatabaseModel) RemoveFromGroup(name string, id string) bool {
+	group, err := model.GetGroupByID(name)
+	if err != nil {
+		return false
+	}
+
+	check := false
+	var idx int
+	for i := 0; i < len(group.AgentsUUIDs); i++ {
+		if group.AgentsUUIDs[i] == id {
+			check = true
+			idx = i
+			break
+		}
+	}
+
+	if !check {
+		return !check
+	}
+
+	group.AgentsUUIDs[len(group.AgentsUUIDs)-1], group.AgentsUUIDs[idx] =
+		group.AgentsUUIDs[idx], group.AgentsUUIDs[len(group.AgentsUUIDs)-1]
+
+	group.AgentsUUIDs = group.AgentsUUIDs[:len(group.AgentsUUIDs)-1]
+
+	sqlStatement := `
+	UPDATE groups
+	SET agentuuids = $2
+	WHERE groupname = $1;
+	`
+
+	model.mutex.Lock()
+	_, err = model.db.Exec(sqlStatement,
+		name,
+		pq.Array(group.AgentsUUIDs))
 	model.mutex.Unlock()
 
 	if err != nil {
