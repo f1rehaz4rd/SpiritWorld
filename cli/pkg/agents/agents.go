@@ -41,6 +41,7 @@ func ListAgents() {
 			agents[i].Beacon.LastBeaconTime)
 	}
 
+	fmt.Println()
 }
 
 func GetAgent(id string) {
@@ -66,6 +67,58 @@ func GetAgent(id string) {
 	fmt.Printf("\tPublic IP: %s\n\n", agent.Publicip)
 	fmt.Printf("\tRegister Time: %s\n", agent.Beacon.RegisterTime)
 	fmt.Printf("\tLast Beacon Time: %s\n", agent.Beacon.LastBeaconTime)
-	fmt.Printf("\tAction Queue: \n%s\n", agent.Beacon.Actionqueue)
+	fmt.Printf("\tAction Queue: \n\t%s\n\n", agent.Beacon.ActionQueue)
+	fmt.Printf("\tActions: \n\t%s\n\n", agent.Beacon.Actions)
+}
 
+func ListActions() {
+	response, _ := http.Get("http://127.0.0.1:8080/api/actions")
+	data, _ := ioutil.ReadAll(response.Body)
+
+	var actions []models.ActionModel
+
+	json.Unmarshal(data, &actions)
+
+	fmt.Printf("%-36s | %-36s | %-13s | %-21s\n",
+		"ACTION UUID",
+		"AGENT UUID",
+		"ACTION TYPE",
+		"ACTION CMD")
+
+	dashHolder := "------------------------------------------------"
+	fmt.Printf("%-37s+%-37s+%-13s+%-21s\n",
+		dashHolder[:37],
+		dashHolder[:38],
+		dashHolder[:15],
+		dashHolder[:23])
+
+	for i := 0; i < len(actions); i++ {
+		fmt.Printf("%-36s | %-36s | %-13s | %s\n",
+			actions[i].UUID,
+			actions[i].AgentUUID,
+			actions[i].ActionType,
+			actions[i].ActionCmd)
+	}
+
+	fmt.Println()
+}
+
+func GetAction(id string) {
+	response, _ := http.Get("http://127.0.0.1:8080/api/action/" + id)
+	data, _ := ioutil.ReadAll(response.Body)
+
+	var action models.ActionModel
+
+	json.Unmarshal(data, &action)
+
+	if action.ActionType == "" {
+		fmt.Println("Action ID is invalid")
+		return
+	}
+
+	fmt.Printf("%s\n\n", action.UUID)
+	fmt.Printf("\tAgent UUID: %s\n", action.AgentUUID)
+	fmt.Printf("\tAction Type: %s\n", action.ActionType)
+	fmt.Printf("\tAction Command: %s\n", action.ActionCmd)
+	fmt.Printf("\tAction Output: \n\t%s\n", action.ActionOutput)
 }
