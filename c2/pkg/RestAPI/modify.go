@@ -1,0 +1,79 @@
+package RestAPI
+
+import (
+	"encoding/json"
+	"fmt"
+	"net/http"
+
+	"github.com/f1rehaz4rd/SpiritWorld/c2/pkg/database"
+	"github.com/google/uuid"
+	"github.com/gorilla/mux"
+)
+
+var db database.DatabaseModel
+
+func createAction(w http.ResponseWriter, r *http.Request) {
+	params := mux.Vars(r)
+	action := database.ActionModel{
+		ActionType: params["type"],
+		ActionCmd:  params["cmd"],
+		UUID:       uuid.New().String(),
+		AgentUUID:  params["id"],
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	if !db.InsertAction(action) {
+		fmt.Fprint(w, nil)
+	} else {
+		json.NewEncoder(w).Encode(action)
+	}
+}
+
+func createGroupAction(w http.ResponseWriter, r *http.Request) {
+	params := mux.Vars(r)
+	w.Header().Set("Content-Type", "application/json")
+
+	check := db.InsertGroupAction(params["name"], params["type"], params["cmd"])
+	if !check {
+		fmt.Fprint(w, nil)
+	} else {
+		json.NewEncoder(w).Encode(check)
+	}
+}
+
+func createGroup(w http.ResponseWriter, r *http.Request) {
+	params := mux.Vars(r)
+
+	group := database.GroupModel{
+		GroupName: params["name"],
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	if !db.CreateGroup(group) {
+		fmt.Fprint(w, nil)
+	} else {
+		json.NewEncoder(w).Encode(group)
+	}
+}
+
+func addToGroup(w http.ResponseWriter, r *http.Request) {
+	params := mux.Vars(r)
+
+	check := db.InsertIntoGroup(params["name"], params["id"])
+	if !check {
+		fmt.Fprint(w, nil)
+	} else {
+		json.NewEncoder(w).Encode(check)
+	}
+}
+
+func removeFromGroup(w http.ResponseWriter, r *http.Request) {
+	params := mux.Vars(r)
+
+	check := db.RemoveFromGroup(params["name"], params["id"])
+	if !check {
+		fmt.Fprint(w, nil)
+	} else {
+		json.NewEncoder(w).Encode(check)
+	}
+}

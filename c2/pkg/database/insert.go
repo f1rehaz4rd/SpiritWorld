@@ -134,6 +134,36 @@ func (model *DatabaseModel) InsertAction(action ActionModel) bool {
 	return true
 }
 
+func (model *DatabaseModel) DequeueAction(action ActionModel) bool {
+
+	agent, _ := model.GetAgentByID(action.AgentUUID)
+
+	if len(agent.Beacon.ActionQueue) > 1 {
+		agent.Beacon.ActionQueue =
+			agent.Beacon.ActionQueue[1 : len(agent.Beacon.ActionQueue)-1]
+	} else {
+		agent.Beacon.ActionQueue = []string{}
+	}
+
+	sqlStatement := `
+	UPDATE agentbeacon
+	SET actionqueue = $2
+	WHERE uuid = $1;
+	`
+
+	model.mutex.Lock()
+	_, err := model.db.Exec(sqlStatement,
+		action.AgentUUID,
+		pq.Array(agent.Beacon.ActionQueue))
+	model.mutex.Unlock()
+
+	if err != nil {
+		return false
+	}
+
+	return true
+}
+
 func (model *DatabaseModel) InsertGroupAction(name, actionType, cmd string) bool {
 
 	group, err := model.GetGroupByID(name)
@@ -193,6 +223,26 @@ func (model *DatabaseModel) InsertGroupAction(name, actionType, cmd string) bool
 		if err != nil {
 			return false
 		}
+	}
+
+	return true
+}
+
+func (model *DatabaseModel) UpdateAction(action ActionModel) bool {
+	sqlStatment := `
+	UPDATE actions
+	SET actionresponse = $2
+	WHERE uuid = $1;
+	`
+
+	model.mutex.Lock()
+	_, err := model.db.Exec(sqlStatment,
+		action.UUID,
+		action.ActionOutput)
+	model.mutex.Unlock()
+
+	if err != nil {
+		return false
 	}
 
 	return true
@@ -271,10 +321,14 @@ func (model *DatabaseModel) RemoveFromGroup(name string, id string) bool {
 		return !check
 	}
 
-	group.AgentsUUIDs[len(group.AgentsUUIDs)-1], group.AgentsUUIDs[idx] =
-		group.AgentsUUIDs[idx], group.AgentsUUIDs[len(group.AgentsUUIDs)-1]
+	if len(group.AgentsUUIDs) > 1 {
+		group.AgentsUUIDs[len(group.AgentsUUIDs)-1], group.AgentsUUIDs[idx] =
+			group.AgentsUUIDs[idx], group.AgentsUUIDs[len(group.AgentsUUIDs)-1]
 
-	group.AgentsUUIDs = group.AgentsUUIDs[:len(group.AgentsUUIDs)-1]
+		group.AgentsUUIDs = group.AgentsUUIDs[:len(group.AgentsUUIDs)-1]
+	} else {
+		group.AgentsUUIDs = []string{}
+	}
 
 	sqlStatement := `
 	UPDATE groups

@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net"
 
+	"github.com/f1rehaz4rd/SpiritWorld/agent/pkg/actionhandler"
 	"github.com/f1rehaz4rd/SpiritWorld/agent/pkg/agents"
 )
 
@@ -48,7 +49,7 @@ func RegisterAgent(agent *agents.Agent) bool {
 	return false
 }
 
-func Beacon(agent *agents.Agent) (bool, agents.Action) {
+func Beacon(agent *agents.Agent) bool {
 	beaconObj := agents.AgentBeacon{
 		Agent: agent,
 		Action: &agents.Action{
@@ -63,7 +64,7 @@ func Beacon(agent *agents.Agent) (bool, agents.Action) {
 	conn, err := net.Dial("tcp", servAddr)
 	if err != nil {
 		fmt.Println(err)
-		return false, action
+		return false
 	}
 
 	defer conn.Close()
@@ -75,8 +76,31 @@ func Beacon(agent *agents.Agent) (bool, agents.Action) {
 
 	if err := json.Unmarshal(msg[:n], &action); err != nil {
 		fmt.Println("failed to beacon")
-		return false, action
+		return false
 	}
 
-	return true, action
+	conn.Close()
+
+	beaconObj, err = actionhandler.HandleAction(*agent, action)
+	if err == nil {
+		return Respond(beaconObj)
+	}
+
+	return true
+}
+
+func Respond(beaconObj agents.AgentBeacon) bool {
+
+	conn, err := net.Dial("tcp", servAddr)
+	if err != nil {
+		fmt.Println(err)
+		return false
+	}
+
+	defer conn.Close()
+
+	msg, _ := json.Marshal(beaconObj)
+	conn.Write(msg)
+
+	return true
 }

@@ -15,12 +15,13 @@ func main() {
 	if tcp.RegisterAgent(&agent) {
 		fmt.Println("Sucessfully registered")
 		for {
-			check, _ := tcp.Beacon(&agent)
+			check := tcp.Beacon(&agent)
 			if check {
 				fmt.Println("successful heartbeat")
 			} else {
 				fmt.Println("problem beaconing")
 			}
+
 			time.Sleep(3 * time.Second)
 		}
 	}
