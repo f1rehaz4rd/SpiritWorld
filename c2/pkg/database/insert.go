@@ -85,7 +85,10 @@ func (model *DatabaseModel) UpdateAgent(beacon api.BeaconAgent) bool {
 	return true
 }
 
-func (model *DatabaseModel) InsertAction(action ActionModel) bool {
+func (model *DatabaseModel) InsertAction(agentID string, action *ActionModel) bool {
+
+	action.AgentUUID = agentID
+	action.UUID = uuid.New().String()
 
 	sqlStatement := `
 	INSERT INTO actions (
@@ -97,8 +100,13 @@ func (model *DatabaseModel) InsertAction(action ActionModel) bool {
 	) VALUES ($1, $2, $3, $4, $5)
 	`
 
+	agent, err := model.GetAgentByID(action.AgentUUID)
+	if err != nil {
+		return false
+	}
+
 	model.mutex.Lock()
-	_, err := model.db.Exec(sqlStatement,
+	_, err = model.db.Exec(sqlStatement,
 		action.UUID,
 		action.AgentUUID,
 		action.ActionType,
@@ -110,7 +118,6 @@ func (model *DatabaseModel) InsertAction(action ActionModel) bool {
 		return false
 	}
 
-	agent, _ := model.GetAgentByID(action.AgentUUID)
 	agent.Beacon.ActionQueue = append(agent.Beacon.ActionQueue, action.UUID)
 	agent.Beacon.Actions = append(agent.Beacon.Actions, action.UUID)
 
@@ -164,7 +171,7 @@ func (model *DatabaseModel) DequeueAction(action ActionModel) bool {
 	return true
 }
 
-func (model *DatabaseModel) InsertGroupAction(name, actionType, cmd string) bool {
+func (model *DatabaseModel) InsertGroupAction(name string, action ActionModel) bool {
 
 	group, err := model.GetGroupByID(name)
 	if err != nil {
@@ -173,12 +180,13 @@ func (model *DatabaseModel) InsertGroupAction(name, actionType, cmd string) bool
 
 	for i := 0; i < len(group.AgentsUUIDs); i++ {
 
-		action := ActionModel{
-			ActionType: actionType,
-			ActionCmd:  cmd,
-			UUID:       uuid.New().String(),
-			AgentUUID:  group.AgentsUUIDs[i],
+		agent, err := model.GetAgentByID(action.AgentUUID)
+		if err != nil {
+			return false
 		}
+
+		action.UUID = uuid.New().String()
+		action.AgentUUID = group.AgentsUUIDs[i]
 
 		sqlStatement := `
 		INSERT INTO actions (
@@ -191,7 +199,7 @@ func (model *DatabaseModel) InsertGroupAction(name, actionType, cmd string) bool
 		`
 
 		model.mutex.Lock()
-		_, err := model.db.Exec(sqlStatement,
+		_, err = model.db.Exec(sqlStatement,
 			action.UUID,
 			action.AgentUUID,
 			action.ActionType,
@@ -203,7 +211,6 @@ func (model *DatabaseModel) InsertGroupAction(name, actionType, cmd string) bool
 			return false
 		}
 
-		agent, _ := model.GetAgentByID(action.AgentUUID)
 		agent.Beacon.ActionQueue = append(agent.Beacon.ActionQueue, action.UUID)
 		agent.Beacon.Actions = append(agent.Beacon.Actions, action.UUID)
 

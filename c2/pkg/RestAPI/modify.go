@@ -6,7 +6,6 @@ import (
 	"net/http"
 
 	"github.com/f1rehaz4rd/SpiritWorld/c2/pkg/database"
-	"github.com/google/uuid"
 	"github.com/gorilla/mux"
 )
 
@@ -14,15 +13,16 @@ var db database.DatabaseModel
 
 func createAction(w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r)
-	action := database.ActionModel{
-		ActionType: params["type"],
-		ActionCmd:  params["cmd"],
-		UUID:       uuid.New().String(),
-		AgentUUID:  params["id"],
+	decoder := json.NewDecoder(r.Body)
+
+	var action database.ActionModel
+	err := decoder.Decode(&action)
+	if err != nil {
+		panic(err)
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	if !db.InsertAction(action) {
+	if !db.InsertAction(params["id"], &action) {
 		fmt.Fprint(w, nil)
 	} else {
 		json.NewEncoder(w).Encode(action)
@@ -31,9 +31,16 @@ func createAction(w http.ResponseWriter, r *http.Request) {
 
 func createGroupAction(w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r)
-	w.Header().Set("Content-Type", "application/json")
 
-	check := db.InsertGroupAction(params["name"], params["type"], params["cmd"])
+	decoder := json.NewDecoder(r.Body)
+	var action database.ActionModel
+	err := decoder.Decode(&action)
+	if err != nil {
+		panic(err)
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	check := db.InsertGroupAction(params["group"], action)
 	if !check {
 		fmt.Fprint(w, nil)
 	} else {
