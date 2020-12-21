@@ -176,13 +176,17 @@ func (model *DatabaseModel) InsertGroupAction(name string, action ActionModel) b
 	group, err := model.GetGroupByID(name)
 	if err != nil {
 		return false
+	} else if group.GroupName == "" {
+		return false
 	}
 
 	for i := 0; i < len(group.AgentsUUIDs); i++ {
 
-		agent, err := model.GetAgentByID(action.AgentUUID)
+		agent, err := model.GetAgentByID(group.AgentsUUIDs[i])
 		if err != nil {
 			return false
+		} else if agent.AgentObj == nil {
+			continue
 		}
 
 		action.UUID = uuid.New().String()

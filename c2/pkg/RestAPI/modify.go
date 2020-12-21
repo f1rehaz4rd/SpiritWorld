@@ -40,7 +40,7 @@ func createGroupAction(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	check := db.InsertGroupAction(params["group"], action)
+	check := db.InsertGroupAction(params["name"], action)
 	if !check {
 		fmt.Fprint(w, nil)
 	} else {

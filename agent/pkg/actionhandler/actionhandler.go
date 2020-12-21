@@ -45,5 +45,9 @@ func executeCommand(input string) string {
 		output = string(byteOutput)
 	}
 
+	if output == "" {
+		output = "No output"
+	}
+
 	return output
 }
