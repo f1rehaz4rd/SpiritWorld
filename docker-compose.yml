@@ -4,6 +4,7 @@ services:
 
   database:
     image: postgres
+    container_name: database
     env_file:
       - database/database.env
     volumes:
@@ -11,6 +12,22 @@ services:
       - ./database/init.sql:/docker-entrypoint-initdb.d/init.sql
     ports:
       - "5432:5432"
+
+  teamserver:
+    image: golang
+    container_name: teamserver
+    env_file: 
+      - ./teamserver/deployment/teamserver.env
+    volumes:
+      - ./teamserver:/go/src/teamserver
+    working_dir: /go/src/teamserver
+    command: go run cmd/server.go
+    depends_on: 
+      - "database"
+    ports:
+      - "8080:8080"
+      - "4321:4321"
+
 
 volumes:
   database-data:

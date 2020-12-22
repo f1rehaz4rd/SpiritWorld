@@ -3,6 +3,7 @@ package database
 import (
 	"database/sql"
 	"fmt"
+	"os"
 	"sync"
 
 	"github.com/f1rehaz4rd/SpiritWorld/teamserver/pkg/agents"
@@ -10,13 +11,13 @@ import (
 	_ "github.com/lib/pq" // used to access postgres
 )
 
-const (
-	HOST     = "localhost"
-	PORT     = 5432
-	USER     = "redteam"
-	PASSWORD = "changeme123"
-	DBNAME   = "agents"
-)
+// const (
+// 	HOST     = "localhost"
+// 	PORT     = 5432
+// 	USER     = "redteam"
+// 	PASSWORD = "changeme123"
+// 	DBNAME   = "agents"
+// )
 
 type DatabaseModel struct {
 	db    *sql.DB
@@ -50,9 +51,13 @@ type GroupModel struct {
 }
 
 func (model *DatabaseModel) Open() {
-	psqlInfo := fmt.Sprintf("host=%s port=%d user=%s "+
+	psqlInfo := fmt.Sprintf("host=%s port=%s user=%s "+
 		"password=%s dbname=%s sslmode=disable",
-		HOST, PORT, USER, PASSWORD, DBNAME)
+		os.Getenv("DATABASE_HOST"),
+		os.Getenv("DATABASE_PORT"),
+		os.Getenv("DATABASE_USER"),
+		os.Getenv("DATABASE_PASSWORD"),
+		os.Getenv("DATABASE_DB"))
 
 	var err error
 	model.db, err = sql.Open("postgres", psqlInfo)

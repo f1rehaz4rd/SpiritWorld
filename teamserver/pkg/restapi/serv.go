@@ -1,15 +1,17 @@
-package RestAPI
+package restapi
 
 import (
 	"fmt"
 	"log"
 	"net/http"
+	"os"
 
 	"github.com/gorilla/mux"
 )
 
 func Start() {
-	// Init Router
+	restport := os.Getenv("RESTAPI_PORT")
+
 	r := mux.NewRouter()
 
 	db.Open()
@@ -27,6 +29,6 @@ func Start() {
 	r.HandleFunc("/api/addtogroup/{name}/{id}", addToGroup).Methods("POST")
 	r.HandleFunc("/api/removefromgroup/{name}/{id}", removeFromGroup).Methods("POST")
 
-	fmt.Println("Starting RestAPI on 0.0.0.0:8080")
-	log.Fatal(http.ListenAndServe(":8080", r))
+	fmt.Println("Starting RestAPI on 0.0.0.0:" + restport)
+	log.Fatal(http.ListenAndServe(":"+restport, r))
 }

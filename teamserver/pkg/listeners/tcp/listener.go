@@ -3,12 +3,13 @@ package tcp
 import (
 	"fmt"
 	"net"
+	"os"
 
 	"github.com/f1rehaz4rd/SpiritWorld/teamserver/pkg/database"
 )
 
 // SERVADDR is the server port number
-const SERVADDR = "0.0.0.0:4321"
+var SERVADDR = "0.0.0.0:"
 
 var db database.DatabaseModel
 
@@ -31,6 +32,7 @@ func handleConnection(conn net.Conn) {
 // StartListener starts a tcp4 listener on the set port.
 //
 func StartListener() {
+	SERVADDR += os.Getenv("TCP_LISTENER_PORT")
 
 	listener, err := net.Listen("tcp", SERVADDR)
 	if err != nil {
