@@ -3,7 +3,7 @@ package api
 import (
 	"time"
 
-	"github.com/f1rehaz4rd/SpiritWorld/c2/pkg/agents"
+	"github.com/f1rehaz4rd/SpiritWorld/teamserver/pkg/agents"
 )
 
 type RegisterAgent struct {

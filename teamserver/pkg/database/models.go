@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"sync"
 
-	"github.com/f1rehaz4rd/SpiritWorld/c2/pkg/agents"
+	"github.com/f1rehaz4rd/SpiritWorld/teamserver/pkg/agents"
 
 	_ "github.com/lib/pq" // used to access postgres
 )

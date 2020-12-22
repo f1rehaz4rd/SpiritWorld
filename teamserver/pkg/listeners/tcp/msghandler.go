@@ -6,9 +6,9 @@ import (
 	"net"
 	"time"
 
-	"github.com/f1rehaz4rd/SpiritWorld/c2/pkg/agents"
-	"github.com/f1rehaz4rd/SpiritWorld/c2/pkg/api"
-	"github.com/f1rehaz4rd/SpiritWorld/c2/pkg/database"
+	"github.com/f1rehaz4rd/SpiritWorld/teamserver/pkg/agents"
+	"github.com/f1rehaz4rd/SpiritWorld/teamserver/pkg/api"
+	"github.com/f1rehaz4rd/SpiritWorld/teamserver/pkg/database"
 )
 
 func HandleMessage(msg []byte, conn net.Conn) bool {

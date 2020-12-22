@@ -1,7 +1,7 @@
 package database
 
 import (
-	"github.com/f1rehaz4rd/SpiritWorld/c2/pkg/api"
+	"github.com/f1rehaz4rd/SpiritWorld/teamserver/pkg/api"
 	"github.com/google/uuid"
 
 	"github.com/lib/pq"

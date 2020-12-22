@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/f1rehaz4rd/SpiritWorld/c2/pkg/database"
+	"github.com/f1rehaz4rd/SpiritWorld/teamserver/pkg/database"
 	"github.com/gorilla/mux"
 )
 

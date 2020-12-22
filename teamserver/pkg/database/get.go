@@ -3,7 +3,7 @@ package database
 import (
 	"database/sql"
 
-	"github.com/f1rehaz4rd/SpiritWorld/c2/pkg/agents"
+	"github.com/f1rehaz4rd/SpiritWorld/teamserver/pkg/agents"
 
 	"github.com/lib/pq"
 	_ "github.com/lib/pq"

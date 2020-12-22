@@ -1,4 +1,4 @@
-module github.com/f1rehaz4rd/SpiritWorld/c2
+module github.com/f1rehaz4rd/SpiritWorld/teamserver
 
 go 1.14
 

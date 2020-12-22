@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"net"
 
-	"github.com/f1rehaz4rd/SpiritWorld/c2/pkg/database"
+	"github.com/f1rehaz4rd/SpiritWorld/teamserver/pkg/database"
 )
 
 // SERVADDR is the server port number
